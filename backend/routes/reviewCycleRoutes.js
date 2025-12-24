@@ -21,7 +21,7 @@ router.post(
 router.get(
   "/",
   protect,
-  authorize("admin", "manager"),
+  authorize("admin", "manager", "employee"),
   reviewCycleController.getAllReviewCycles
 );
 router.get(

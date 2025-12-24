@@ -11,7 +11,7 @@ const {
 router.post(
   "/",
   protect,
-  authorize("admin", "manager"),
+  authorize("admin", "manager", "employee"),
   goalValidation,
   goalController.createGoal
 );
