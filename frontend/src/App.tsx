@@ -7,6 +7,7 @@ import {
 
 import DashboardPage from "./components/Pages/DashboardPage";
 import ForgotPasswordPage from "./components/Pages/ForgotPasswordPage";
+import GoalForm from "./components/Pages/GoalForm";
 import LoginPage from "./components/Pages/LoginPage";
 import LogoutPage from "./components/Pages/LogoutPage";
 import Navbar from "./components/Organisms/Navbar";
@@ -14,6 +15,7 @@ import ProfilePage from "./components/Pages/ProfilePage";
 import React from "react";
 import RegisterPage from "./components/Pages/RegisterPage";
 import ResetPasswordPage from "./components/Pages/ResetPasswordPage";
+import ReviewForm from "./components/Pages/ReviewForm";
 import { RootState } from "./store/rootReducer";
 import Sidebar from "./components/Organisms/Sidebar";
 import { useSelector } from "react-redux";
@@ -93,6 +95,26 @@ const App: React.FC = () => {
                   <PrivateRoute
                     path="/dashboard"
                     component={DashboardPage}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/reviews/:id"
+                element={
+                  <PrivateRoute
+                    path="/reviews/:id"
+                    component={ReviewForm}
+                    isAuthenticated={isAuthenticated}
+                  />
+                }
+              />
+              <Route
+                path="/goals/new"
+                element={
+                  <PrivateRoute
+                    path="/goals/new"
+                    component={GoalForm}
                     isAuthenticated={isAuthenticated}
                   />
                 }
