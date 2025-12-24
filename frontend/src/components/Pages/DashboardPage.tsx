@@ -15,11 +15,13 @@ import {
   useTheme,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   fetchReviewsFailure,
   fetchReviewsStart,
   fetchReviewsSuccess,
 } from "../../store/slices/reviewsSlice";
+import { fetchDashboardData } from "../../store/slices/dashboardSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
@@ -38,10 +40,12 @@ import { fetchUserProfile } from "../../store/slices/userSlice";
 
 const DashboardPage: React.FC = () => {
   const dispatch: AppDispatch = useDispatch(); // Use AppDispatch type for dispatch
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.user.profile);
   const reviews = useSelector((state: RootState) => state.reviews.reviews);
+  const dashboardData = useSelector((state: RootState) => state.dashboard.data);
   const loading = useSelector(
-    (state: RootState) => state.user.loading || state.reviews.loading
+    (state: RootState) => state.user.loading || state.reviews.loading || state.dashboard.loading
   );
 
   const theme = useTheme();
@@ -118,6 +122,7 @@ const DashboardPage: React.FC = () => {
       }
     };
 
+    dispatch(fetchDashboardData());
     dispatch(fetchUserProfile());
     fetchReviews();
   }, [dispatch]);
@@ -280,7 +285,7 @@ const DashboardPage: React.FC = () => {
                         marginTop: 2,
                       }}
                     >
-                      45/80
+                      {dashboardData?.pendingReviews?.length || 0}
                     </Typography>
                   </Box>
                 </Box>
@@ -321,14 +326,14 @@ const DashboardPage: React.FC = () => {
                   <Box width="100%" mr={1}>
                     <ColoredLinearProgressBar
                       variant="determinate"
-                      value={(3 / 4) * 100}
+                      value={dashboardData?.latestReview?.overallScore ? dashboardData.latestReview.overallScore : 0}
                       // color=""
                       // sx={{ width: "100%" }}
                       marginTop={0}
                     />
                   </Box>
                 </Box>
-                3/4{" "}
+                {dashboardData?.latestReview?.overallScore ? `${dashboardData.latestReview.overallScore}/100` : "N/A"}{" "}
                 <InfoOutlinedIcon
                   sx={{
                     color: "darkgray",
@@ -401,8 +406,8 @@ const DashboardPage: React.FC = () => {
                   </Box>
                   <Box display="flex" alignItems="center" mb={2}>
                     <img
-                      src="/path/to/reviewer/profile.jpg"
-                      alt="Reviewer"
+                      src="/path/to/manager/profile.jpg"
+                      alt="Manager"
                       style={{
                         width: is1024pxScreen ? 50 : 60,
                         height: is1024pxScreen ? 50 : 60,
@@ -422,7 +427,7 @@ const DashboardPage: React.FC = () => {
                           fontWeight: "bold",
                         }}
                       >
-                        Jane Smith
+                        {dashboardData?.latestReview?.reviewer?.firstName} {dashboardData?.latestReview?.reviewer?.lastName}
                       </Typography>
                       <Box
                         sx={{
@@ -439,6 +444,7 @@ const DashboardPage: React.FC = () => {
                       </Box>
                     </Box>
                   </Box>
+                  {/* Additional reviewer block removed for now as we only have one main reviewer usually, or iterate if multiple */}
                 </Box>
               </Grid>
               <Grid item xs={12} md={8}>
@@ -821,16 +827,16 @@ const DashboardPage: React.FC = () => {
                   {addType === "skills"
                     ? "Add Skills"
                     : addType === "awards"
-                    ? "Add Awards"
-                    : "Add Projects"}
+                      ? "Add Awards"
+                      : "Add Projects"}
                 </Typography>
               ) : (
                 <Typography variant="h6">
                   {editType === "skills"
                     ? "Edit Skills"
                     : editType === "awards"
-                    ? "Edit Awards"
-                    : "Edit Projects"}
+                      ? "Edit Awards"
+                      : "Edit Projects"}
                 </Typography>
               )}
               <IconButton onClick={() => setOpenSidebar(false)}>

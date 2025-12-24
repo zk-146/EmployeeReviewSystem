@@ -5,10 +5,12 @@ import { RootState } from '../rootReducer';
 import axios from 'axios';
 import { updateUserProfile as updateAuthUserProfile } from './authSlice'; // Import the updateUserProfile action from authSlice
 
-interface UserProfile {
+export interface UserProfile {
+  _id?: string;
   id: string;
   name: string;
   email: string;
+  role: 'employee' | 'manager' | 'admin';
   // Add other profile fields as needed
 }
 

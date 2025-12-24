@@ -1,5 +1,6 @@
 import authReducer from './slices/authSlice';
 import { combineReducers } from '@reduxjs/toolkit';
+import dashboardReducer from './slices/dashboardSlice';
 import goalsReducer from './slices/goalsSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import performanceReducer from './slices/performanceSlice';
@@ -13,6 +14,7 @@ const rootReducer = combineReducers({
   goals: goalsReducer,
   notifications: notificationsReducer,
   performance: performanceReducer,
+  dashboard: dashboardReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
