@@ -43,6 +43,7 @@ router.delete(
   employeeController.deleteEmployee
 );
 router.get("/me", protect, employeeController.getCurrentEmployeeProfile);
+router.put("/me", protect, employeeController.updateCurrentEmployeeProfile);
 router.get(
   "/statistics",
   protect,

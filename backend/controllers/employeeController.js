@@ -234,6 +234,25 @@ const employeeController = {
       res.status(500).json({ message: error.message });
     }
   },
+  updateCurrentEmployeeProfile: async (req, res) => {
+    try {
+      const { skills, awards } = req.body;
+      const employee = await Employee.findOne({ user: req.user.id });
+      if (!employee) {
+        return res.status(404).json({ message: "Employee profile not found" });
+      }
+
+      if (skills) employee.skills = skills;
+      if (awards) employee.awards = awards;
+
+      await employee.save();
+      logger.info("Updated current employee profile skills/awards", { userId: req.user.id });
+      res.json(employee);
+    } catch (error) {
+      logger.error("Error updating current employee profile", { error: error.message });
+      res.status(500).json({ message: error.message });
+    }
+  },
 };
 
 module.exports = employeeController;
