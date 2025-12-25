@@ -2,18 +2,32 @@
 const Review = require("../models/Review");
 const Goal = require("../models/Goal");
 const ReviewCycle = require("../models/ReviewCycle");
+const Employee = require("../models/Employee");
 const logger = require("../utils/logger");
 
 const dashboardController = {
   getEmployeeDashboard: async (req, res, next) => {
     try {
-      const employeeId = req.user.id;
+      const userId = req.user.id;
       const currentDate = new Date();
+
+      // Get Employee record with manager info
+      const employee = await Employee.findOne({ user: userId }).populate({
+        path: "manager",
+        select: "firstName lastName position",
+      });
+      
+      if (!employee) {
+        return res.status(404).json({ message: "Employee profile not found" });
+      }
+
+      const employeeId = employee._id;
 
       // Get current review cycle
       const currentCycle = await ReviewCycle.findOne({
         startDate: { $lte: currentDate },
         endDate: { $gte: currentDate },
+        status: "Active"
       });
 
       // Get upcoming review
@@ -35,18 +49,40 @@ const dashboardController = {
         status: "FinalApproved",
       })
         .sort({ finalApprovedAt: -1 })
+        .populate("reviewer", "firstName lastName position")
         .limit(1);
+
+      // Get pending reviews count (if they are a manager)
+      const pendingReviewsCount = await Review.countDocuments({
+        reviewer: employeeId,
+        status: "Submitted"
+      });
 
       logger.info("Retrieved employee dashboard data", { employeeId });
       res.json({
+        user: {
+          id: employee.employeeId,
+          name: `${employee.firstName} ${employee.lastName}`,
+          email: req.user.email,
+          role: req.user.role,
+          position: employee.position,
+          department: employee.department,
+        },
+        manager: employee.manager ? {
+          name: `${employee.manager.firstName} ${employee.manager.lastName}`,
+          position: employee.manager.position
+        } : null,
         currentCycle: currentCycle
           ? {
+              name: currentCycle.name,
               startDate: currentCycle.startDate,
               endDate: currentCycle.endDate,
+              status: currentCycle.status
             }
           : null,
         upcomingReview: upcomingReview
           ? {
+              id: upcomingReview._id,
               status: upcomingReview.status,
               dueDate: upcomingReview.dueDate,
               templateName: upcomingReview.reviewTemplate.name,
@@ -57,18 +93,35 @@ const dashboardController = {
           title: goal.title,
           progress: goal.progress,
           dueDate: goal.dueDate,
+          status: goal.status
         })),
         latestReview: latestReview
           ? {
+              _id: latestReview._id,
               overallScore: latestReview.overallScore,
+              status: latestReview.status,
               completedAt: latestReview.finalApprovedAt,
+              reviewer: latestReview.reviewer ? { 
+                firstName: latestReview.reviewer.firstName, 
+                lastName: latestReview.reviewer.lastName,
+                position: latestReview.reviewer.position
+              } : null
             }
           : null,
+        performanceSummary: {
+          kra: goals.length > 0 ? Math.round(goals.reduce((acc, g) => acc + (g.progress || 0), 0) / goals.length) : 0,
+          globalKra: 80,
+          competencies: 85,
+          overallTrend: [65, 70, 75, 80] // Placeholder for chart
+        },
+        pendingReviewsCount,
+        skills: employee.skills || [],
+        awards: employee.awards || []
       });
     } catch (error) {
       logger.error("Error retrieving employee dashboard data", {
         error: error.message,
-        employeeId: req.user.id,
+        userId: req.user.id,
       });
       next(error);
     }
