@@ -8,6 +8,11 @@ const EmployeeSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    manager: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      default: null,
+    },
     employeeId: {
       type: String,
       required: true,
@@ -63,6 +68,18 @@ const EmployeeSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    skills: [
+      {
+        name: String,
+        expertise: { type: Number, min: 1, max: 4, default: 1 }
+      }
+    ],
+    awards: [
+      {
+        title: String,
+        date: Date
+      }
+    ]
   },
   {
     timestamps: true,
