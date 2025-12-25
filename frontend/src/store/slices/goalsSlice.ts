@@ -52,7 +52,12 @@ export const createGoal = createAsyncThunk(
   async (goalData: Partial<Goal>, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     try {
-      const response = await axios.post('http://localhost:5000/api/goals', goalData, {
+      const payload = {
+        ...goalData,
+        employeeId: goalData.employee,
+        reviewCycleId: goalData.reviewCycle
+      };
+      const response = await axios.post('http://localhost:5000/api/goals', payload, {
         headers: { Authorization: `Bearer ${state.auth.token}` },
       });
       return response.data;
