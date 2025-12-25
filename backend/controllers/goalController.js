@@ -16,10 +16,16 @@ const goalController = {
       const { employeeId, reviewCycleId, title, description, dueDate } =
         req.body;
 
-      const [employee, reviewCycle] = await Promise.all([
-        Employee.findById(employeeId),
-        ReviewCycle.findById(reviewCycleId),
-      ]);
+      // Check if employeeId is a User ID (from auth) or direct Employee ID
+      // We assume it's a User ID first, as that's what frontend sends
+      let employee = await Employee.findOne({ user: employeeId });
+      
+      // If not found, try finding by direct ID
+      if (!employee) {
+        employee = await Employee.findById(employeeId);
+      }
+
+      const reviewCycle = await ReviewCycle.findById(reviewCycleId);
 
       if (!employee || !reviewCycle) {
         return res
@@ -27,8 +33,9 @@ const goalController = {
           .json({ message: "Invalid employee or review cycle" });
       }
 
+      // Use the actual Employee ID for the goal
       const newGoal = new Goal({
-        employee: employeeId,
+        employee: employee._id,
         reviewCycle: reviewCycleId,
         title,
         description,
