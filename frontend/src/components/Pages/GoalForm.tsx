@@ -16,6 +16,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { clearGoalMessages, createGoal, fetchCyclesForGoal } from '../../store/slices/goalsSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchUserProfile } from '../../store/slices/userSlice';
 
 import { AppDispatch } from '../../store';
 import { RootState } from '../../store/rootReducer';
@@ -31,7 +32,9 @@ const GoalForm: React.FC = () => {
         (state: RootState) => state.goals
     );
 
-    const user = useSelector((state: RootState) => state.user.profile);
+    const userProfile = useSelector((state: RootState) => state.user.profile);
+    const authUser = useSelector((state: RootState) => state.auth.user);
+    const user = userProfile || authUser;
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -40,11 +43,14 @@ const GoalForm: React.FC = () => {
 
     useEffect(() => {
         dispatch(fetchCyclesForGoal());
+        if (!userProfile) {
+            dispatch(fetchUserProfile());
+        }
 
         return () => {
             dispatch(clearGoalMessages());
         };
-    }, [dispatch]);
+    }, [dispatch, userProfile]);
 
     // Auto-select active cycle if available
     useEffect(() => {
@@ -60,6 +66,7 @@ const GoalForm: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // console.log('User in GoalForm:', user); // Debugging
         if (!user?._id && !user?.id) {
             alert('User profile not loaded');
             return;
