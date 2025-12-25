@@ -6,25 +6,51 @@ import axios from 'axios';
 // Define the shape of the dashboard data
 export interface DashboardData {
     user: {
+        id: string;
         name: string;
         email: string;
         role: string;
+        position?: string;
+        department?: string;
     };
-    latestReview?: {
-        _id?: string;
-        overallScore: number;
+    manager?: {
+        name: string;
+        position: string;
+    } | null;
+    currentCycle: {
+        name: string;
+        startDate: string;
+        endDate: string;
         status: string;
-        reviewer?: { firstName: string; lastName: string };
-        employee?: { firstName: string; lastName: string };
-        reviewCycle?: { name: string; startDate: string; endDate: string; status: string };
-    };
+    } | null;
+    upcomingReview?: {
+        id: string;
+        status: string;
+        dueDate: string;
+        templateName: string;
+    } | null;
     goals: Array<{
         id: string;
         title: string;
         progress: number;
         status: string;
+        dueDate?: string;
     }>;
-    pendingReviews: Array<{ // For Managers/Admin
+    latestReview?: {
+        _id?: string;
+        overallScore: number;
+        status: string;
+        completedAt?: string;
+        reviewer?: { firstName: string; lastName: string; position: string };
+    } | null;
+    performanceSummary?: {
+        kra: number;
+        globalKra: number;
+        competencies: number;
+        overallTrend: number[];
+    };
+    pendingReviewsCount?: number;
+    pendingReviews: Array<{
         _id: string;
         employee: { firstName: string; lastName: string };
         status: string;
@@ -32,7 +58,7 @@ export interface DashboardData {
     }>;
     skills: Array<{ name: string; expertise: number }>;
     awards: Array<{ title: string; date: string }>;
-    stats?: { // For Admin
+    stats?: {
         totalEmployees: number;
         activeReviews: number;
         completedReviews: number;
@@ -71,6 +97,25 @@ export const fetchDashboardData = createAsyncThunk(
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard data');
+        }
+    }
+);
+
+export const updateEmployeeProfile = createAsyncThunk(
+    'dashboard/updateProfile',
+    async (profileData: { skills?: any[], awards?: any[] }, { getState, dispatch, rejectWithValue }) => {
+        const state = getState() as RootState;
+        const token = state.auth.token;
+
+        try {
+            await axios.put('http://localhost:5000/api/employees/me', profileData, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            // Refresh dashboard data after update
+            dispatch(fetchDashboardData());
+            return profileData;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
         }
     }
 );
