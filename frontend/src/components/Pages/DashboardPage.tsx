@@ -15,13 +15,14 @@ import {
   useTheme,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import {
   fetchReviewsFailure,
   fetchReviewsStart,
   fetchReviewsSuccess,
 } from "../../store/slices/reviewsSlice";
-import { fetchDashboardData } from "../../store/slices/dashboardSlice";
+import { fetchDashboardData, updateEmployeeProfile } from "../../store/slices/dashboardSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
@@ -61,11 +62,17 @@ const DashboardPage: React.FC = () => {
   >("skills");
   const [newAward, setNewAward] = useState(""); // State for new award input
   const [newProject, setNewProject] = useState(""); // State for new project input
-  const [skills, setSkills] = useState<{ name: string; expertise: number }[]>([
-    { name: "JavaScript", expertise: 3 },
-  ]); // State for added skills
-  const [awards, setAwards] = useState<string[]>([]); // State for added awards
+  const [skills, setSkills] = useState<{ name: string; expertise: number }[]>([]); // State for added skills
+  const [awards, setAwards] = useState<{ title: string; date: string }[]>([]); // State for added awards
   const [projects, setProjects] = useState<string[]>([]); // State for added projects
+
+  // Sync with dashboard data when it loads
+  useEffect(() => {
+    if (dashboardData) {
+      if (dashboardData.skills) setSkills(dashboardData.skills);
+      if (dashboardData.awards) setAwards(dashboardData.awards);
+    }
+  }, [dashboardData]);
 
   const availableSkills = ["JavaScript", "React", "Node.js", "TypeScript"]; // Example skill list
   const expertiseLevels = [1, 2, 3, 4]; // Expertise levels
@@ -104,21 +111,22 @@ const DashboardPage: React.FC = () => {
     setOpenSidebar(true);
   };
 
-  const openProjectsSidebar = () => {
-    setAddType("projects");
-    setOpenSidebar(true);
+  const handleSaveProfile = () => {
+    dispatch(updateEmployeeProfile({ skills, awards }));
+    setOpenSidebar(false);
   };
 
   useEffect(() => {
     const fetchReviews = async () => {
       dispatch(fetchReviewsStart());
       try {
-        // Replace this with your actual API call
-        const response = await fetch("/api/reviews");
-        const data = await response.json();
-        dispatch(fetchReviewsSuccess(data));
+        const token = localStorage.getItem('token');
+        const response = await axios.get("http://localhost:5000/api/reviews", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        dispatch(fetchReviewsSuccess(response.data));
       } catch (error: any) {
-        dispatch(fetchReviewsFailure(error.toString()));
+        dispatch(fetchReviewsFailure(error.response?.data?.message || error.message));
       }
     };
 
@@ -150,198 +158,235 @@ const DashboardPage: React.FC = () => {
         {loading ? (
           <Typography>Loading...</Typography>
         ) : (
-          <Grid container spacing={isSmallScreen ? 2 : 4}>
-            <Grid item xs={12} md={5}>
-              <Box
-                display="flex"
-                alignItems="center"
-                flexDirection={isSmallScreen ? "column" : "row"}
-              >
-                <img
-                  src="/path/to/dummy/profile.jpg"
-                  alt="User"
-                  style={{
-                    width: is1024pxScreen ? 80 : 100,
-                    height: is1024pxScreen ? 80 : 100,
-                    marginRight: isSmallScreen ? 0 : 16,
-                    marginBottom: isSmallScreen ? 16 : 0,
-                  }}
-                />
-                <Box textAlign={isSmallScreen ? "center" : "left"}>
-                  <Typography
-                    variant="h3"
-                    style={{
-                      fontSize: is1024pxScreen ? "0.875rem" : "1rem",
-                      color: "#0047AB",
-                    }}
-                  >
-                    Hi! {user?.name},
-                  </Typography>
-                  <Typography
-                    variant="h3"
-                    style={{
-                      fontSize: is1024pxScreen ? "0.875rem" : "1rem",
-                      color: "#0047AB",
-                    }}
-                  >
-                    EMP1234
-                    {user?.id}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    style={{
-                      fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                      marginTop: "5px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Software Engineer
-                    {/* {user.designation} */}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    style={{ fontSize: is1024pxScreen ? "0.675rem" : ".8rem" }}
-                  >
-                    {user?.email}
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4} textAlign="center">
-              <Box display="flex" flexDirection="column" alignItems="stretch">
+          <Box>
+            <Grid container spacing={isSmallScreen ? 2 : 4}>
+              <Grid item xs={12} md={5}>
                 <Box
                   display="flex"
                   alignItems="center"
-                  justifyContent="center"
-                  width={"100%"}
+                  flexDirection={isSmallScreen ? "column" : "row"}
                 >
-                  <AutorenewIcon
-                    fontSize="medium"
-                    sx={{
-                      marginRight: 1,
-                      backgroundColor: "#fff3d3",
-                      padding: 0.8,
-                      borderRadius: 60,
-                      color: "#ffc63b",
+                  <img
+                    src="/path/to/dummy/profile.jpg"
+                    alt="User"
+                    style={{
+                      width: is1024pxScreen ? 80 : 100,
+                      height: is1024pxScreen ? 80 : 100,
+                      marginRight: isSmallScreen ? 0 : 16,
+                      marginBottom: isSmallScreen ? 16 : 0,
                     }}
                   />
-                  <Box ml={1} width={"100%"}>
+                  <Box textAlign={isSmallScreen ? "center" : "left"}>
                     <Typography
                       variant="h3"
                       style={{
-                        fontSize: is1024pxScreen ? ".8rem" : "1rem",
+                        fontSize: is1024pxScreen ? "0.875rem" : "1.2rem",
+                        color: "#0047AB",
                         fontWeight: "bold",
-                        width: "fit-content",
                       }}
                     >
-                      Appraisal Cycle - Year 2024 - Open
+                      Hi, {dashboardData?.user?.name || user?.name}!
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      style={{
+                        fontSize: is1024pxScreen ? "0.75rem" : "0.9rem",
+                        color: "#666",
+                        marginBottom: "4px"
+                      }}
+                    >
+                      {dashboardData?.user?.id || "EMP-N/A"}
                     </Typography>
                     <Typography
                       variant="body1"
                       style={{
-                        fontSize: is1024pxScreen ? ".75rem" : ".9rem",
-                        textAlign: "center",
-                        width: "fit-content",
-                        marginTop: 2,
-                      }}
-                    >
-                      01 Aug - 2024 to 31 Sept - 2024
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  mt={2}
-                  width={"100%"}
-                >
-                  <AccessTimeIcon
-                    fontSize="medium"
-                    sx={{
-                      marginRight: 1,
-                      backgroundColor: "#fff3d3",
-                      padding: 0.8,
-                      borderRadius: 60,
-                      color: "#ffc63b",
-                    }}
-                  />
-                  <Box ml={1} width={"100%"}>
-                    <Typography
-                      variant="h3"
-                      style={{
-                        fontSize: is1024pxScreen ? ".8rem" : "1rem",
+                        fontSize: is1024pxScreen ? "0.675rem" : ".85rem",
                         fontWeight: "bold",
-                        width: "fit-content",
+                        color: "#333"
                       }}
                     >
-                      Pending Approvals
+                      {dashboardData?.user?.position || "Position not set"}
                     </Typography>
                     <Typography
-                      variant="body1"
-                      style={{
-                        fontSize: is1024pxScreen ? ".75rem" : ".9rem",
-                        width: "fit-content",
-                        marginTop: 2,
-                      }}
+                      variant="body2"
+                      style={{ fontSize: is1024pxScreen ? "0.675rem" : ".8rem", color: "#888" }}
                     >
-                      {dashboardData?.pendingReviews?.length || 0}
+                      {dashboardData?.user?.department || "Department not set"}
                     </Typography>
                   </Box>
                 </Box>
-              </Box>
-            </Grid>
-            <Grid
-              item
-              xs={12}
-              md={3}
-              textAlign={isSmallScreen ? "center" : "right"}
-            >
-              <Typography
-                variant="h6"
-                style={{
-                  fontSize: is1024pxScreen ? ".8rem" : "1rem",
-                  fontWeight: "bold",
-                }}
-              >
-                My Appraisal Status
-              </Typography>
-              <Typography
-                variant="body1"
-                style={{
-                  fontSize: is1024pxScreen ? ".75rem" : ".9rem",
-                  alignSelf: "flex-start",
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent={isSmallScreen ? "space-around" : "flex-end"}
-                  width={"60%"}
-                >
-                  <Box width="100%" mr={1}>
-                    <ColoredLinearProgressBar
-                      variant="determinate"
-                      value={dashboardData?.latestReview?.overallScore ? dashboardData.latestReview.overallScore : 0}
-                      // color=""
-                      // sx={{ width: "100%" }}
-                      marginTop={0}
+              </Grid>
+              <Grid item xs={12} md={4} textAlign="center">
+                <Box display="flex" flexDirection="column" alignItems="stretch">
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    width={"100%"}
+                    sx={{
+                      cursor: dashboardData?.currentCycle ? "pointer" : "default",
+                      padding: 1,
+                      borderRadius: 1,
+                      transition: 'background-color 0.2s',
+                      '&:hover': dashboardData?.currentCycle ? {
+                        backgroundColor: '#f5f5f5'
+                      } : {}
+                    }}
+                    onClick={() => {
+                      if (dashboardData?.currentCycle) {
+                        alert(`Cycle Details:\n${dashboardData.currentCycle.name}\nStatus: ${dashboardData.currentCycle.status}\nStart: ${new Date(dashboardData.currentCycle.startDate).toLocaleDateString()}\nEnd: ${new Date(dashboardData.currentCycle.endDate).toLocaleDateString()}`);
+                      }
+                    }}
+                  >
+                    <AutorenewIcon
+                      fontSize="medium"
+                      sx={{
+                        marginRight: 1,
+                        backgroundColor: "#fff3d3",
+                        padding: 0.8,
+                        borderRadius: 60,
+                        color: "#ffc63b",
+                      }}
                     />
+                    <Box ml={1} width={"100%"}>
+                      <Typography
+                        variant="h3"
+                        style={{
+                          fontSize: is1024pxScreen ? ".8rem" : "1rem",
+                          fontWeight: "bold",
+                          width: "fit-content",
+                          color: "#333"
+                        }}
+                      >
+                        {dashboardData?.currentCycle?.name || "No Active Cycle"}
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        style={{
+                          fontSize: is1024pxScreen ? ".7rem" : "0.85rem",
+                          textAlign: "left",
+                          width: "fit-content",
+                          marginTop: 2,
+                          color: "#666"
+                        }}
+                      >
+                        {dashboardData?.currentCycle
+                          ? `${new Date(dashboardData.currentCycle.startDate).toLocaleDateString()} - ${new Date(dashboardData.currentCycle.endDate).toLocaleDateString()}`
+                          : "N/A"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    mt={2}
+                    width={"100%"}
+                    sx={{
+                      cursor: dashboardData?.pendingReviewsCount ? "pointer" : "default",
+                      padding: 1,
+                      borderRadius: 1,
+                      transition: 'background-color 0.2s',
+                      '&:hover': dashboardData?.pendingReviewsCount ? {
+                        backgroundColor: '#f5f5f5'
+                      } : {}
+                    }}
+                    onClick={() => {
+                      if (dashboardData?.pendingReviewsCount) {
+                        // Scroll to pending reviews section or show modal
+                        alert('Pending reviews functionality: Navigate to review management page');
+                      }
+                    }}
+                  >
+                    <AccessTimeIcon
+                      fontSize="medium"
+                      sx={{
+                        marginRight: 1,
+                        backgroundColor: "#fff3d3",
+                        padding: 0.8,
+                        borderRadius: 60,
+                        color: "#ffc63b",
+                      }}
+                    />
+                    <Box ml={1} width={"100%"}>
+                      <Typography
+                        variant="h3"
+                        style={{
+                          fontSize: is1024pxScreen ? ".8rem" : "1rem",
+                          fontWeight: "bold",
+                          width: "fit-content",
+                        }}
+                      >
+                        Pending Approvals
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        style={{
+                          fontSize: is1024pxScreen ? ".75rem" : "1rem",
+                          width: "fit-content",
+                          marginTop: 2,
+                          fontWeight: "bold",
+                          color: "#0047AB"
+                        }}
+                      >
+                        {dashboardData?.pendingReviewsCount || 0}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-                {dashboardData?.latestReview?.overallScore ? `${dashboardData.latestReview.overallScore}/100` : "N/A"}{" "}
-                <InfoOutlinedIcon
-                  sx={{
-                    color: "darkgray",
-                    fontSize: is1024pxScreen ? ".75rem" : ".9rem",
-                    marginLeft: 0.5,
+              </Grid>
+              <Grid
+                item
+                xs={12}
+                md={3}
+                textAlign={isSmallScreen ? "center" : "right"}
+              >
+                <Typography
+                  variant="h6"
+                  style={{
+                    fontSize: is1024pxScreen ? ".8rem" : "1rem",
+                    fontWeight: "bold",
                   }}
-                />
-              </Typography>
+                >
+                  My Appraisal Status
+                </Typography>
+                <Typography
+                  variant="body1"
+                  style={{
+                    fontSize: is1024pxScreen ? ".75rem" : ".9rem",
+                    alignSelf: "flex-start",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent={isSmallScreen ? "space-around" : "flex-end"}
+                    width={"60%"}
+                  >
+                    <Box width="100%" mr={1}>
+                      <ColoredLinearProgressBar
+                        variant="determinate"
+                        value={dashboardData?.latestReview?.overallScore ? dashboardData.latestReview.overallScore : 0}
+                        // color=""
+                        // sx={{ width: "100%" }}
+                        marginTop={0}
+                      />
+                    </Box>
+                  </Box>
+                  {dashboardData?.latestReview?.overallScore ? `${dashboardData.latestReview.overallScore}/100` : "N/A"}{" "}
+                  <InfoOutlinedIcon
+                    sx={{
+                      color: "darkgray",
+                      fontSize: is1024pxScreen ? ".75rem" : ".9rem",
+                      marginLeft: 0.5,
+                    }}
+                  />
+                </Typography>
+              </Grid>
             </Grid>
             <Divider sx={{ width: "100%", marginTop: 2, marginBottom: 2 }} />
             <Grid container spacing={isSmallScreen ? 2 : 4}>
@@ -354,97 +399,148 @@ const DashboardPage: React.FC = () => {
                     height: "100%", // Ensures equal height
                   }}
                 >
-                  <Typography
-                    variant="h6"
-                    style={{
-                      fontSize: is1024pxScreen ? ".8rem" : "1rem",
-                      fontWeight: "bold",
-                      marginBottom: "16px",
+                  <Box
+                    sx={{
+                      cursor: dashboardData?.latestReview ? "pointer" : "default",
+                      "&:hover": dashboardData?.latestReview ? { backgroundColor: "#f9f9f9" } : {}
+                    }}
+                    onClick={() => {
+                      if (dashboardData?.latestReview?._id) {
+                        navigate(`/reviews/${dashboardData.latestReview._id}`);
+                      }
                     }}
                   >
-                    My Appraisal Details
-                  </Typography>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <img
-                      src="/path/to/manager/profile.jpg"
-                      alt="Manager"
+                    <Typography
+                      variant="h6"
                       style={{
-                        width: is1024pxScreen ? 50 : 60,
-                        height: is1024pxScreen ? 50 : 60,
-                        marginRight: 16,
+                        fontSize: is1024pxScreen ? ".8rem" : "1rem",
+                        fontWeight: "bold",
+                        marginBottom: "16px",
                       }}
-                    />
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      width="100%"
                     >
-                      <Typography
-                        variant="body1"
-                        style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        John Doe
-                      </Typography>
-                      <Box
-                        sx={{
-                          backgroundColor: "#E3F2FD", // Light blue background
-                          color: "#1E88E5", // Professional blue text
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          display: "inline-block",
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Manager
+                      My Appraisal Details
+                    </Typography>
+
+                    {/* Manager Section */}
+                    {dashboardData?.manager ? (
+                      <Box display="flex" alignItems="center" mb={2}>
+                        <Box
+                          sx={{
+                            width: is1024pxScreen ? 40 : 50,
+                            height: is1024pxScreen ? 40 : 50,
+                            borderRadius: "50%",
+                            backgroundColor: "#0047AB",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontWeight: "bold",
+                            marginRight: 2
+                          }}
+                        >
+                          {dashboardData.manager.name.charAt(0)}
+                        </Box>
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          width="100%"
+                        >
+                          <Box>
+                            <Typography
+                              variant="body1"
+                              style={{
+                                fontSize: is1024pxScreen ? "0.75rem" : ".9rem",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {dashboardData.manager.name}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {dashboardData.manager.position}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              backgroundColor: "#E3F2FD",
+                              color: "#1E88E5",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              fontSize: "0.7rem",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Manager
+                          </Box>
+                        </Box>
                       </Box>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <img
-                      src="/path/to/manager/profile.jpg"
-                      alt="Manager"
-                      style={{
-                        width: is1024pxScreen ? 50 : 60,
-                        height: is1024pxScreen ? 50 : 60,
-                        marginRight: 16,
-                      }}
-                    />
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      width="100%"
-                    >
-                      <Typography
-                        variant="body1"
-                        style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {dashboardData?.latestReview?.reviewer?.firstName} {dashboardData?.latestReview?.reviewer?.lastName}
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                        Manager not assigned
                       </Typography>
-                      <Box
-                        sx={{
-                          backgroundColor: "#E3F2FD", // Light blue background
-                          color: "#1E88E5", // Professional blue text
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          display: "inline-block",
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Reviewer
+                    )}
+
+                    {/* Reviewer Section */}
+                    {dashboardData?.latestReview?.reviewer && (
+                      <Box display="flex" alignItems="center" mb={2}>
+                        <Box
+                          sx={{
+                            width: is1024pxScreen ? 40 : 50,
+                            height: is1024pxScreen ? 40 : 50,
+                            borderRadius: "50%",
+                            backgroundColor: "#1E88E5",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontWeight: "bold",
+                            marginRight: 2
+                          }}
+                        >
+                          {dashboardData.latestReview.reviewer.firstName.charAt(0)}
+                        </Box>
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          width="100%"
+                        >
+                          <Box>
+                            <Typography
+                              variant="body1"
+                              style={{
+                                fontSize: is1024pxScreen ? "0.75rem" : ".9rem",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {dashboardData.latestReview.reviewer.firstName} {dashboardData.latestReview.reviewer.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {dashboardData.latestReview.reviewer.position || "Reviewer"}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              backgroundColor: "#E8F5E9",
+                              color: "#4CAF50",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              fontSize: "0.7rem",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Reviewer
+                          </Box>
+                        </Box>
                       </Box>
-                    </Box>
+                    )}
+
+                    {dashboardData?.latestReview && (
+                      <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block', textDecoration: 'underline' }}>
+                        View Latest Review Details →
+                      </Typography>
+                    )}
                   </Box>
-                  {/* Additional reviewer block removed for now as we only have one main reviewer usually, or iterate if multiple */}
                 </Box>
               </Grid>
               <Grid item xs={12} md={8}>
@@ -456,113 +552,95 @@ const DashboardPage: React.FC = () => {
                     height: "100%", // Ensures equal height
                   }}
                 >
-                  <Box display="flex" flexDirection="row" alignItems="center">
+                  <Box display="flex" flexDirection={isSmallScreen ? "column" : "row"} alignItems="flex-start">
                     <Box
-                      height={is1024pxScreen ? 150 : 200}
-                      bgcolor="#f0f0f0"
                       flex={2}
-                      mr={2}
+                      mr={isSmallScreen ? 0 : 2}
+                      mb={isSmallScreen ? 2 : 0}
+                      width="100%"
                     >
-                      {/* Add your graph component here */}
-                    </Box>
-                    <Box flex={1}>
                       <Typography
                         variant="h6"
                         style={{
                           fontSize: is1024pxScreen ? ".8rem" : "1rem",
                           fontWeight: "bold",
-                          marginBottom: "8px",
+                          marginBottom: "16px",
                         }}
                       >
-                        My Summary 2024
+                        Performance Trend
                       </Typography>
+                      {/* Bar Chart */}
+                      <Box sx={{ display: 'flex', alignItems: 'flex-end', height: 180, gap: 1.5, mt: 2, px: 2 }}>
+                        {(dashboardData?.performanceSummary?.overallTrend || [0, 0, 0, 0]).map((score, i) => (
+                          <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Box
+                              sx={{
+                                width: '100%',
+                                height: `${score}%`,
+                                backgroundColor: '#0047AB',
+                                borderRadius: '6px 6px 0 0',
+                                transition: 'height 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover': { backgroundColor: '#1E88E5' },
+                                position: 'relative',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                              }}
+                            >
+                              <Box sx={{
+                                position: 'absolute',
+                                top: -30,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                backgroundColor: '#333',
+                                color: 'white',
+                                px: 1,
+                                py: 0.5,
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                opacity: 0.9
+                              }}>
+                                {score}%
+                              </Box>
+                            </Box>
+                            <Typography variant="caption" sx={{ mt: 1, color: '#666', fontWeight: 'bold' }}>
+                              Q{i + 1}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                    <Box flex={1} width="100%" sx={{ borderLeft: isSmallScreen ? 'none' : '1px solid #eee', pl: isSmallScreen ? 0 : 3 }}>
                       <Typography
-                        variant="body1"
+                        variant="h6"
                         style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          color: "#1E88E5", // Blue color for percentage
-                        }}
-                      >
-                        Projects handled "-"
-                        <span style={{ fontWeight: "bold", cursor: "pointer" }}>
-                          {" "}
-                          "-"{" "}
-                        </span>
-                      </Typography>
-                      <Divider sx={{ margin: "8px 0" }} />
-                      <Typography
-                        variant="body1"
-                        style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        KRA{" "}
-                        <span
-                          style={{
-                            color: "#1E88E5", // Blue color for percentage
-                          }}
-                        >
-                          75%
-                        </span>
-                      </Typography>
-                      <Divider sx={{ margin: "8px 0" }} />
-                      <Typography
-                        variant="body1"
-                        style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        Global KRA{" "}
-                        <span
-                          style={{
-                            color: "#1E88E5", // Blue color for percentage
-                          }}
-                        >
-                          75%
-                        </span>
-                      </Typography>
-                      <Divider sx={{ margin: "8px 0" }} />
-                      <Typography
-                        variant="body1"
-                        style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        Competencies
-                        <span
-                          style={{
-                            color: "#1E88E5", // Blue color for percentage
-                          }}
-                        >
-                          85%
-                        </span>
-                      </Typography>
-                      <Divider sx={{ margin: "8px 0" }} />
-                      <Typography
-                        variant="body1"
-                        style={{
-                          fontSize: is1024pxScreen ? "0.675rem" : ".8rem",
-                          display: "flex",
-                          justifyContent: "space-between",
+                          fontSize: is1024pxScreen ? ".8rem" : "1rem",
                           fontWeight: "bold",
+                          marginBottom: "16px",
                         }}
                       >
-                        Overall Score
-                        <span
-                          style={{
-                            color: "#1E88E5", // Blue color for percentage
-                            // fontWeight: "bold",
-                          }}
-                        >
-                          80%
-                        </span>
+                        Summary {dashboardData?.currentCycle?.name?.split(' ').pop() || 2024}
                       </Typography>
+
+                      {[
+                        { label: 'KRA Score', value: dashboardData?.performanceSummary?.kra || 0 },
+                        { label: 'Global KRA', value: dashboardData?.performanceSummary?.globalKra || 0 },
+                        { label: 'Competencies', value: dashboardData?.performanceSummary?.competencies || 0 },
+                      ].map((item, idx) => (
+                        <Box key={idx} mb={2.5}>
+                          <Box display="flex" justifyContent="space-between" mb={0.5}>
+                            <Typography variant="body2" sx={{ color: '#555' }}>{item.label}</Typography>
+                            <Typography variant="body2" fontWeight="bold" color="primary">{item.value}%</Typography>
+                          </Box>
+                          <ColoredLinearProgressBar variant="determinate" value={item.value} marginTop={0} />
+                        </Box>
+                      ))}
+
+                      <Box mt={3} p={1.5} sx={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                        <Typography variant="caption" color="textSecondary" display="block">Overall Performance</Typography>
+                        <Typography variant="h5" fontWeight="bold" color="primary">
+                          {Math.round(((dashboardData?.performanceSummary?.kra || 0) + (dashboardData?.performanceSummary?.globalKra || 0) + (dashboardData?.performanceSummary?.competencies || 0)) / 3)}%
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
                 </Box>
@@ -599,9 +677,10 @@ const DashboardPage: React.FC = () => {
                           cursor: "pointer",
                           transition: "all linear 200ms",
                           "&:hover": {
-                            color: "#1976d2", // Change color on hover
+                            color: "#1976d2",
                           },
                         }}
+                        onClick={() => navigate('/goals/new')}
                       >
                         <AddIcon fontSize="small" />
                       </Box>
@@ -611,45 +690,53 @@ const DashboardPage: React.FC = () => {
                           cursor: "pointer",
                           transition: "all linear 200ms",
                           "&:hover": {
-                            color: "#1976d2", // Change color on hover
+                            color: "#1976d2",
                           },
                         }}
+                        onClick={() => navigate('/goals/new')}
                       >
                         <EditIcon fontSize="small" />
                       </Box>
                     </Box>
                   </Box>
-                  <Box sx={{ marginBottom: 2 }}>
-                    {" "}
-                    {/* {{ edit_1 }} Box for Complete Project A */}
-                    <Typography>Complete Project A</Typography>
-                    <ColoredLinearProgressBar
-                      variant="determinate"
-                      value={70}
-                      marginTop={0}
-                    />
-                  </Box>
-
-                  <Box sx={{ marginBottom: 2 }}>
-                    {" "}
-                    {/* {{ edit_2 }} Box for Improve Team Collaboration */}
-                    <Typography>Improve Team Collaboration</Typography>
-                    <ColoredLinearProgressBar
-                      variant="determinate"
-                      value={50}
-                      marginTop={0.5}
-                    />
-                  </Box>
-
-                  <Box sx={{ marginBottom: 2 }}>
-                    {" "}
-                    {/* {{ edit_3 }} Box for Achieve Sales Target */}
-                    <Typography>Achieve Sales Target</Typography>
-                    <ColoredLinearProgressBar
-                      variant="determinate"
-                      value={80}
-                      marginTop={0.5}
-                    />
+                  <Box sx={{ flexGrow: 1 }}>
+                    {dashboardData?.goals && dashboardData.goals.length > 0 ? (
+                      dashboardData.goals.map((goal) => (
+                        <Box
+                          key={goal.id}
+                          sx={{
+                            marginBottom: 3,
+                            cursor: 'pointer',
+                            padding: 1.5,
+                            borderRadius: 1,
+                            transition: 'background-color 0.2s',
+                            '&:hover': {
+                              backgroundColor: '#f5f5f5'
+                            }
+                          }}
+                          onClick={() => {
+                            // Navigate to goal detail/edit page when available
+                            alert(`Goal details: ${goal.title}\nProgress: ${goal.progress}%\nStatus: ${goal.status}`);
+                          }}
+                        >
+                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                            <Typography variant="body2" sx={{ fontWeight: '600' }}>{goal.title}</Typography>
+                            <Typography variant="caption" sx={{ color: '#666' }}>{goal.progress}%</Typography>
+                          </Box>
+                          <ColoredLinearProgressBar
+                            variant="determinate"
+                            value={goal.progress}
+                            marginTop={0}
+                          />
+                        </Box>
+                      ))
+                    ) : (
+                      <Box textAlign="center" py={4}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                          No goals set for this cycle.
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               </Grid>
@@ -741,68 +828,43 @@ const DashboardPage: React.FC = () => {
                           cursor: "pointer",
                           transition: "all linear 200ms",
                           "&:hover": {
-                            color: "#1976d2", // Change color on hover
+                            color: "#1976d2",
                           },
+                        }}
+                        onClick={() => {
+                          setAddType("awards");
+                          setOpenSidebar(true);
                         }}
                       >
                         <AddIcon fontSize="small" />
                       </Box>
-                      <Box
-                        sx={{
-                          display: "inline-block",
-                          cursor: "pointer",
-                          transition: "all linear 200ms",
-                          "&:hover": {
-                            color: "#1976d2", // Change color on hover
-                          },
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </Box>
                     </Box>
                   </Box>
-                  <Box
-                    sx={{
-                      marginBottom: 2,
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Typography>Employee of the Month</Typography>
-                    <Typography variant="body2" sx={{ marginTop: 1 }}>
-                      Mar, 2023
+                  {awards.length > 0 ? (
+                    awards.map((award, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          marginBottom: 2,
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Typography>{award.title}</Typography>
+                        <Typography variant="body2" sx={{ marginTop: 1 }}>
+                          {award.date ? new Date(award.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                      No awards added yet.
                     </Typography>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      marginBottom: 2,
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Typography>Best Team Player</Typography>
-                    <Typography variant="body2" sx={{ marginTop: 1 }}>
-                      Jan, 2023
-                    </Typography>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      marginBottom: 2,
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Typography>Outstanding Performance</Typography>
-                    <Typography variant="body2" sx={{ marginTop: 1 }}>
-                      Dec, 2022
-                    </Typography>
-                  </Box>
+                  )}
                 </Box>
               </Grid>
             </Grid>
-          </Grid>
+          </Box>
         )}
         <Drawer
           anchor="right"
@@ -923,8 +985,8 @@ const DashboardPage: React.FC = () => {
                   />
                   <Button
                     onClick={() => {
-                      if (newAward && !awards.includes(newAward)) {
-                        setAwards([...awards, newAward]);
+                      if (newAward) {
+                        setAwards([...awards, { title: newAward, date: new Date().toISOString() }]);
                         setNewAward(""); // Clear input after adding
                       }
                     }}
@@ -977,6 +1039,17 @@ const DashboardPage: React.FC = () => {
                   ))}
                 </>
               )}
+              <Divider sx={{ my: 3 }} />
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                size="large"
+                onClick={handleSaveProfile}
+                sx={{ borderRadius: 2 }}
+              >
+                Save All Changes
+              </Button>
             </Box>
           </Box>
         </Drawer>
