@@ -131,6 +131,18 @@ const reviewsSlice = createSlice({
     clearMessages(state) {
       state.error = null;
       state.successMessage = null;
+    },
+    fetchReviewsStart(state) {
+      state.loading = true;
+      state.error = null;
+    },
+    fetchReviewsSuccess(state, action: PayloadAction<ReviewDetail[]>) {
+      state.loading = false;
+      state.reviews = action.payload;
+    },
+    fetchReviewsFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -197,10 +209,12 @@ const reviewsSlice = createSlice({
   },
 });
 
-export const { clearCurrentReview, clearMessages } = reviewsSlice.actions;
-// Exporting the old actions for compatibility with DashboardPage (until refactored)
-export const fetchReviewsStart = () => ({ type: 'reviews/fetchReviewsStart' });
-export const fetchReviewsSuccess = (data: any) => ({ type: 'reviews/fetchReviewsSuccess', payload: data });
-export const fetchReviewsFailure = (error: any) => ({ type: 'reviews/fetchReviewsFailure', payload: error });
+export const {
+  clearCurrentReview,
+  clearMessages,
+  fetchReviewsStart,
+  fetchReviewsSuccess,
+  fetchReviewsFailure
+} = reviewsSlice.actions;
 
 export default reviewsSlice.reducer;
